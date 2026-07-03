@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id                   Int                    @id @default(autoincrement())
+  name                 String
+  email                String                 @unique
+  password             String
+  role                 String                 @default("admin")
+  createdAt            DateTime               @default(now())
+  resetTokens          PasswordResetToken[]
+  managedBlogs         Blog[]
+  managedInquiries     Inquiry[]
+  managedFeedback      Feedback[]
+  managedEvents        Event[]
+  managedChatHistory   ChatHistory[]
+  managedGalleryImages GalleryImage[]
+  managedSubscribers   NewsletterSubscriber[]
+  managedRegistrations EventRegistration[]
+}
+
+model Blog {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String   @db.Text
+  content     String   @db.Text
+  image       String?
+  category    String
+  slug        String   @unique
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  managedById Int?
+  managedBy   Admin?   @relation(fields: [managedById], references: [id], onDelete: SetNull)
+
+  @@index([managedById])
+}
+
+model Inquiry {
+  id          Int      @id @default(autoincrement())
+  name        String
+  email       String
+  subject     String
+  message     String   @db.Text
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  managedById Int?
+  managedBy   Admin?   @relation(fields: [managedById], references: [id], onDelete: SetNull)
+
+  @@index([managedById])
+}
+
+model Feedback {
+  id          Int      @id @default(autoincrement())
+  userName    String
+  userRole    String   @default("Client")
+  rating      Int
+  feedback    String   @db.Text
+  approved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  managedById Int?
+  managedBy   Admin?   @relation(fields: [managedById], references: [id], onDelete: SetNull)
+
+  @@index([managedById])
+}
+
+model Event {
+  id                  Int                 @id @default(autoincrement())
+  title               String
+  description         String              @db.Text
+  location            String
+  date                DateTime
+  endDate             DateTime?
+  eventType           String              @default("Event")
+  availability        String?
+  registrationEnabled Boolean             @default(true)
+  banner              String?
+  createdAt           DateTime            @default(now())
+  registrations       EventRegistration[]
+  managedById         Int?
+  managedBy           Admin?              @relation(fields: [managedById], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@index([eventType])
+  @@index([managedById])
+}
+
+model ChatHistory {
+  id          Int      @id @default(autoincrement())
+  sessionId   String
+  userMessage String   @db.Text
+  aiResponse  String   @db.Text
+  createdAt   DateTime @default(now())
+  managedById Int?
+  managedBy   Admin?   @relation(fields: [managedById], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([sessionId])
+  @@index([managedById])
+}
+
+model GalleryImage {
+  id          Int      @id @default(autoincrement())
+  title       String
+  url         String
+  category    String
+  createdAt   DateTime @default(now())
+  managedById Int?
+  managedBy   Admin?   @relation(fields: [managedById], references: [id], onDelete: SetNull)
+
+  @@index([category])
+  @@index([managedById])
+}
+
+model NewsletterSubscriber {
+  id              Int      @id @default(autoincrement())
+  subscribedEmail String   @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  managedById     Int?
+  managedBy       Admin?   @relation(fields: [managedById], references: [id], onDelete: SetNull)
+
+  @@index([managedById])
+}
+
+model EventRegistration {
+  id           Int      @id @default(autoincrement())
+  eventId      Int?
+  eventTitle   String
+  name         String
+  email        String
+  phone        String?
+  organization String?
+  message      String?  @db.Text
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  managedById  Int?
+
+  event     Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  managedBy Admin? @relation(fields: [managedById], references: [id], onDelete: SetNull)
+
+  @@index([eventId])
+  @@index([managedById])
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user Admin @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  actorId    Int?
+  actorEmail String?
+  action     String
+  target     String
+  targetId   Int?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}

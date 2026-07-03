@@ -1,0 +1,1 @@
+ALTER TABLE "Feedback" ADD COLUMN "userRole" TEXT NOT NULL DEFAULT 'Client';
